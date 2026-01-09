@@ -1,0 +1,94 @@
+﻿<!-- templates/expenses/budget_list.html -->
+{% extends 'base.html' %}
+{% block title %}Budgets - Expense Tracker{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-piggy-bank"></i> My Budgets</h1>
+    <a href="{% url 'expenses:budget_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Create Budget
+    </a>
+</div>
+
+{% if budget_data %}
+<div class="grid grid-2">
+    {% for item in budget_data %}
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h3 style="margin-bottom: 0.5rem;">{{ item.budget.name }}</h3>
+                    <p class="text-muted" style="font-size: 0.875rem; margin: 0;">
+                        {{ item.budget.get_period_display }} |
+                        {{ item.budget.start_date|date:"M d" }} - {{ item.budget.end_date|date:"M d, Y" }}
+                    </p>
+                </div>
+                <span class="badge {% if item.is_over %}badge-danger{% elif item.is_alert %}badge-warning{% else %}badge-success{% endif %}" style="font-size: 1rem;">
+                    {{ item.percentage|floatformat:0 }}%
+                </span>
+            </div>
+
+            {% if item.budget.category %}
+            <div class="mb-3">
+                <span class="category-chip">
+                    <span class="category-color" style="background-color: {{ item.budget.category.color }}"></span>
+                    {{ item.budget.category.name }}
+                </span>
+            </div>
+            {% endif %}
+
+            <div class="progress mb-3">
+                <div class="progress-bar {% if item.is_over %}progress-bar-danger{% elif item.is_alert %}progress-bar-warning{% else %}progress-bar-success{% endif %}"
+                     style="width: {{ item.percentage }}%">
+                </div>
+            </div>
+
+            <div class="grid grid-3" style="text-align: center; margin-bottom: 1rem;">
+                <div>
+                    <p class="text-muted" style="font-size: 0.813rem; margin-bottom: 0.25rem;">Spent</p>
+                    <p style="font-weight: 700; margin: 0;">₱{{ item.spent|floatformat:2 }}</p>
+                </div>
+                <div>
+                    <p class="text-muted" style="font-size: 0.813rem; margin-bottom: 0.25rem;">Budget</p>
+                    <p style="font-weight: 700; margin: 0;">₱{{ item.budget.amount|floatformat:2 }}</p>
+                </div>
+                <div>
+                    <p class="text-muted" style="font-size: 0.813rem; margin-bottom: 0.25rem;">Remaining</p>
+                    <p style="font-weight: 700; margin: 0; color: {% if item.is_over %}var(--danger){% else %}var(--success){% endif %};">
+                        ₱{{ item.remaining|floatformat:2 }}
+                    </p>
+                </div>
+            </div>
+
+            {% if item.is_over %}
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle"></i>
+                <strong>Over budget!</strong> You've exceeded by ₱{{ item.spent|floatformat:2 }}
+            </div>
+            {% elif item.is_alert %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-circle"></i>
+                <strong>Alert!</strong> You've reached {{ item.budget.alert_threshold }}% of your budget.
+            </div>
+            {% endif %}
+
+            <div class="text-center mt-3">
+                <span class="badge {% if item.budget.is_active %}badge-success{% else %}badge-primary{% endif %}">
+                    {% if item.budget.is_active %}Active{% else %}Inactive{% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-piggy-bank text-muted" style="font-size: 4rem;"></i>
+        <p class="text-muted mt-3">No budgets created yet. Start managing your finances!</p>
+        <a href="{% url 'expenses:budget_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create First Budget
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

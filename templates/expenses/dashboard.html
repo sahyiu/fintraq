@@ -1,0 +1,286 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Dashboard - Expense Tracker{% endblock %}
+
+{% block content %}
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-speedometer2"></i> Dashboard</h1>
+            <p class="text-secondary">Welcome back, {{ user.first_name|default:user.username }}!</p>
+        </div>
+        <a href="{% url 'expenses:expense_create' %}" class="btn btn-primary btn-lg">
+            <i class="bi bi-plus-circle"></i> Add Expense
+        </a>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="stats-grid">
+    <div class="card-stat">
+        <div class="card-title">Total Expenses</div>
+        <div class="stat-value">₱{{ total_expenses|floatformat:2 }}</div>
+        <div class="stat-label">This month</div>
+    </div>
+
+    <div class="card-stat">
+        <div class="card-title">Transactions</div>
+        <div class="stat-value">{{ expense_count }}</div>
+        <div class="stat-label">This month</div>
+    </div>
+
+    <div class="card-stat">
+        <div class="card-title">Active Budgets</div>
+        <div class="stat-value">{{ budget_data|length }}</div>
+        <div class="stat-label">Currently tracking</div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="grid grid-2 mb-4">
+    <!-- Spending by Category -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="bi bi-pie-chart"></i> Spending by Category
+            </h3>
+        </div>
+        <div class="card-body">
+            {% if expenses_by_category %}
+            <div style="height: 300px; position: relative;">
+                <canvas id="categoryChart"></canvas>
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-5">No expenses yet. Start tracking!</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Daily Expenses -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="bi bi-graph-up"></i> Daily Expenses (Last 7 Days)
+            </h3>
+        </div>
+        <div class="card-body">
+            <div style="height: 300px; position: relative;">
+                <canvas id="dailyChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Budget Status -->
+{% if budget_data %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h3 class="card-title">
+            <i class="bi bi-wallet2"></i> Budget Status
+        </h3>
+    </div>
+    <div class="card-body">
+        {% for item in budget_data %}
+        <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h4 style="font-size: 1.125rem; margin: 0;">{{ item.budget.name }}</h4>
+                <span class="badge {% if item.is_over %}badge-danger{% elif item.is_alert %}badge-warning{% else %}badge-success{% endif %}">
+                    {{ item.percentage|floatformat:0 }}%
+                </span>
+            </div>
+
+            <div class="progress mb-2">
+                <div class="progress-bar {% if item.is_over %}progress-bar-danger{% elif item.is_alert %}progress-bar-warning{% else %}progress-bar-success{% endif %}"
+                     style="width: {{ item.percentage }}%">
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between text-muted" style="font-size: 0.875rem;">
+                <span>Spent: ₱{{ item.spent|floatformat:2 }}</span>
+                <span>Budget: ₱{{ item.budget.amount|floatformat:2 }}</span>
+            </div>
+
+            {% if item.is_over %}
+            <div class="alert alert-danger mt-2">
+                <i class="bi bi-exclamation-triangle"></i> Over budget by ₱{{ item.spent|floatformat:2 }}
+            </div>
+            {% elif item.remaining > 0 %}
+            <div class="text-success mt-2" style="font-size: 0.875rem;">
+                <i class="bi bi-check-circle"></i> ₱{{ item.remaining|floatformat:2 }} remaining
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Expenses and Alerts -->
+<div class="grid grid-2">
+    <!-- Recent Expenses -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="bi bi-clock-history"></i> Recent Expenses
+            </h3>
+            <a href="{% url 'expenses:expense_list' %}" class="btn btn-sm btn-outline">
+                View All
+            </a>
+        </div>
+        <div class="card-body">
+            {% if recent_expenses %}
+            <div class="table-container" style="padding: 0;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th class="text-right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for expense in recent_expenses %}
+                        <tr>
+                            <td>{{ expense.date|date:"M d" }}</td>
+                            <td>{{ expense.description }}</td>
+                            <td>
+                                {% if expense.category %}
+                                <span class="category-chip">
+                                    <span class="category-color" style="background-color: {{ expense.category.color }}"></span>
+                                    {{ expense.category.name }}
+                                </span>
+                                {% else %}
+                                <span class="badge badge-primary">Uncategorized</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-right">₱{{ expense.amount|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-4">No expenses recorded yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="bi bi-bell"></i> Alerts
+            </h3>
+        </div>
+        <div class="card-body">
+            {% if unread_alerts %}
+            {% for alert in unread_alerts %}
+            <div class="alert alert-{% if alert.alert_type == 'exceeded' %}danger{% else %}warning{% endif %}">
+                <i class="bi bi-exclamation-circle"></i>
+                {{ alert.message }}
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-3">No alerts</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Category Chart
+    {% if expenses_by_category %}
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for item in expenses_by_category %}'{{ item.category__name|default:"Uncategorized" }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for item in expenses_by_category %}{{ item.total }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: [{% for item in expenses_by_category %}'{{ item.category__color|default:"#6b7280" }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+                borderWidth: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#e5e7eb',
+                        padding: 15,
+                        font: {
+                            size: 12
+                        }
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Daily Chart
+    const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+    new Chart(dailyCtx, {
+        type: 'line',
+        data: {
+            labels: [{% for item in daily_expenses %}'{{ item.date|date:"M d" }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Daily Expenses',
+                data: [{% for item in daily_expenses %}{{ item.total }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                tension: 0.4,
+                fill: true,
+                borderWidth: 3,
+                pointBackgroundColor: '#8b5cf6',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#2d2d44',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#9ca3af',
+                        callback: function(value) {
+                            return '₱' + value.toLocaleString();
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#9ca3af'
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
