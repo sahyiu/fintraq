@@ -37,19 +37,31 @@ class ExpenseForm(forms.ModelForm):
     """Form for creating/editing expenses"""
     class Meta:
         model = Expense
-        fields = ['category', 'amount', 'description', 'notes', 'date']
+        fields = ['category', 'amount', 'description', 'notes', 'date', 'budget']  # Add 'budget'
         widgets = {
             'category': forms.Select(attrs={'class': 'form-control'}),
             'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
             'description': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'What did you spend on?'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Additional notes (optional)'}),
             'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'budget': forms.Select(attrs={'class': 'form-control'}),
         }
     
     def __init__(self, user=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if user:
-            self.fields['category'].queryset = Category.objects.filter(user=user)
+            categories = Category.objects.filter(user=user)
+            categories = sorted(categories, key=lambda c: (c.name.lower() == 'other', c.name.lower()))
+            self.fields['category'].queryset = Category.objects.filter(pk__in=[c.pk for c in categories])
+            today = date.today()
+            self.fields['budget'].queryset = Budget.objects.filter(
+                user=user,
+                is_active=True,
+                start_date__lte=today,
+                end_date__gte=today
+            )
+        else:
+            self.fields['budget'].queryset = Budget.objects.none()
         # Set default date to today
         if not self.instance.pk:
             self.fields['date'].initial = date.today()

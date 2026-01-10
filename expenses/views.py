@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from .models import Expense, Category, Budget, Alert
 from .forms import ExpenseForm, CategoryForm, BudgetForm, ExpenseFilterForm, UserRegistrationForm
+from django.contrib.auth import get_user_model
 
 
 def register(request):
@@ -29,6 +30,7 @@ def register(request):
                 ('Shopping', 'shopping', '#ec4899'),
                 ('Education', 'education', '#6366f1'),
                 ('Housing', 'housing', '#14b8a6'),
+                ('Other', 'other', '#6b7280'),
             ]
             for name, cat_type, color in default_categories:
                 Category.objects.create(
@@ -48,6 +50,7 @@ def register(request):
 
 @login_required
 def dashboard(request):
+    auto_deactivate_budgets(request.user)
     """Main dashboard view"""
     user = request.user
     today = timezone.now().date()
@@ -149,7 +152,7 @@ def expense_list(request):
         if filter_form.cleaned_data.get('max_amount'):
             expenses = expenses.filter(amount__lte=filter_form.cleaned_data['max_amount'])
     
-    total = expenses.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    total = expenses.aggregate(total=Sum('amount'))['total' or Decimal('0.00')]
     
     context = {
         'expenses': expenses,
@@ -158,7 +161,7 @@ def expense_list(request):
     }
     
     return render(request, 'expenses/expense_list.html', context)
-
+ 
 
 @login_required
 def expense_create(request):
@@ -178,8 +181,7 @@ def expense_create(request):
     else:
         form = ExpenseForm(user=request.user)
     
-    return render(request, 'expenses/expense_form.html', {'form': form, 'action': 'Create'})
-
+    return render(request, 'expenses/expense_form.html', {'form': form})
 
 @login_required
 def expense_update(request, pk):
@@ -215,13 +217,14 @@ def expense_delete(request, pk):
 @login_required
 def category_list(request):
     """List all categories"""
+    ensure_other_category(request.user)
     categories = Category.objects.filter(user=request.user)
     return render(request, 'expenses/category_list.html', {'categories': categories})
-
 
 @login_required
 def category_create(request):
     """Create a new category"""
+    ensure_other_category(request.user)
     if request.method == 'POST':
         form = CategoryForm(request.POST)
         if form.is_valid():
@@ -232,13 +235,13 @@ def category_create(request):
             return redirect('expenses:category_list')
     else:
         form = CategoryForm()
-    
     return render(request, 'expenses/category_form.html', {'form': form, 'action': 'Create'})
 
 
 # Budget Views
 @login_required
 def budget_list(request):
+    auto_deactivate_budgets(request.user)
     """List all budgets"""
     budgets = Budget.objects.filter(user=request.user)
     
@@ -270,6 +273,30 @@ def budget_create(request):
         form = BudgetForm(user=request.user)
     
     return render(request, 'expenses/budget_form.html', {'form': form, 'action': 'Create'})
+
+
+@login_required
+def budget_update(request, pk):
+    budget = get_object_or_404(Budget, pk=pk, user=request.user)
+    if request.method == 'POST':
+        form = BudgetForm(user=request.user, data=request.POST, instance=budget)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Budget updated successfully!')
+            return redirect('expenses:budget_list')
+    else:
+        form = BudgetForm(user=request.user, instance=budget)
+    return render(request, 'expenses/budget_form.html', {'form': form, 'action': 'Update'})
+
+
+@login_required
+def budget_delete(request, pk):
+    budget = get_object_or_404(Budget, pk=pk, user=request.user)
+    if request.method == 'POST':
+        budget.delete()
+        messages.success(request, 'Budget deleted successfully!')
+        return redirect('expenses:budget_list')
+    return render(request, 'expenses/budget_confirm_delete.html', {'budget': budget})
 
 
 # Helper function
@@ -310,3 +337,44 @@ def check_budget_alerts(user, expense):
                     alert_type='threshold',
                     message=f'Budget "{budget.name}" has reached {budget.alert_threshold}% threshold!'
                 )
+
+def ensure_other_category(user):
+    """Ensure the 'Other' category exists for the user."""
+    if not Category.objects.filter(user=user, name__iexact="Other").exists():
+        Category.objects.create(
+            user=user,
+            name="Other",
+            category_type="other",
+            color="#6b7280"
+        )
+
+# Create default categories for all existing users
+default_categories = [
+    ('Food & Dining', 'food', '#ef4444'),
+    ('Transportation', 'transport', '#3b82f6'),
+    ('Utilities', 'utilities', '#f59e0b'),
+    ('Entertainment', 'entertainment', '#8b5cf6'),
+    ('Healthcare', 'healthcare', '#10b981'),
+    ('Shopping', 'shopping', '#ec4899'),
+    ('Education', 'education', '#6366f1'),
+    ('Housing', 'housing', '#14b8a6'),
+    ('Other', 'other', '#6b7280'),
+]
+
+User = get_user_model()
+for user in User.objects.all():
+    for name, cat_type, color in default_categories:
+        if not Category.objects.filter(user=user, name=name).exists():
+            Category.objects.create(
+                user=user,
+                name=name,
+                category_type=cat_type,
+                color=color
+            )
+
+from django.utils import timezone
+
+def auto_deactivate_budgets(user):
+    """Deactivate budgets whose end_date has passed."""
+    today = timezone.now().date()
+    Budget.objects.filter(user=user, is_active=True, end_date__lt=today).update(is_active=False)

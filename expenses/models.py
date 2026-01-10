@@ -37,6 +37,7 @@ class Expense(models.Model):
     """Individual expense records"""
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='expenses')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='expenses')
+    budget = models.ForeignKey('Budget', on_delete=models.SET_NULL, null=True, blank=True)
     amount = models.DecimalField(
         max_digits=10, 
         decimal_places=2,
@@ -140,4 +141,5 @@ class Alert(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
+        budget = models.ForeignKey('Budget', on_delete=models.SET_NULL, null=True, blank=True)
         return f"{self.get_alert_type_display()} - {self.user.username}"

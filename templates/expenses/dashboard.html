@@ -283,4 +283,54 @@
         }
     });
 </script>
+<style>
+    css
+    .stats-grid {
+        display: flex;
+        gap: 2rem;
+        margin: 2rem 0;
+    }
+
+    .card-stat {
+        flex: 1;
+        background: rgba(180, 160, 220, 0.25);
+        border-radius: 2rem; /* More rounded */
+        box-shadow: 0 4px 24px 0 rgba(120, 80, 200, 0.10);
+        padding: 2.5rem 2rem 1.5rem 2rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        min-width: 220px;
+        min-height: 160px;
+        transition: box-shadow 0.2s;
+    }
+
+        .card-stat:hover {
+            box-shadow: 0 8px 32px 0 rgba(120, 80, 200, 0.18);
+        }
+
+    .card-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #e0d7f7;
+        letter-spacing: 1px;
+        margin-bottom: 1.5rem;
+        text-transform: uppercase;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 0.5rem;
+        letter-spacing: 1px;
+    }
+
+    .stat-label {
+        font-size: 1rem;
+        color: #d1c4e9;
+        font-weight: 500;
+        margin-top: auto;
+    }
+</style>
 {% endblock %}

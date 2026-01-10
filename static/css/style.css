@@ -358,29 +358,45 @@ p {
 
 /* Stat Cards */
 .card-stat {
-    background: var(--gradient-purple);
-    border: none;
-    color: white;
+    flex: 1;
+    background: rgba(180, 160, 220, 0.25);
+    border-radius: 2rem; /* More rounded */
+    box-shadow: 0 4px 24px 0 rgba(120, 80, 200, 0.10);
+    padding: 2.5rem 2rem 1.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-width: 220px;
+    min-height: 160px;
+    transition: box-shadow 0.2s;
 }
 
+    .card-stat:hover {
+        box-shadow: 0 8px 32px 0 rgba(120, 80, 200, 0.18);
+    }
+
     .card-stat .card-title {
-        color: rgba(255, 255, 255, 0.9);
-        font-size: 0.875rem;
-        text-transform: uppercase;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #e0d7f7;
         letter-spacing: 1px;
+        margin-bottom: 1.5rem;
+        text-transform: uppercase;
     }
 
     .card-stat .stat-value {
         font-size: 2.5rem;
-        font-weight: 700;
-        color: white;
-        margin: var(--spacing-sm) 0;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 0.5rem;
+        letter-spacing: 1px;
     }
 
     .card-stat .stat-label {
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 0.875rem;
+        font-size: 1rem;
+        color: #d1c4e9;
+        font-weight: 500;
+        margin-top: auto;
     }
 
 /* ==========================================
@@ -833,10 +849,9 @@ input[type="checkbox"] {
 }
 
 .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-xl);
+    display: flex;
+    gap: 2rem;
+    margin: 2rem 0;
 }
 
 .expense-item {
