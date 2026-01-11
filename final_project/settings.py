@@ -11,7 +11,7 @@ SECRET_KEY = 'django-insecure-your-secret-key-here-change-in-production'
 
 DEBUG = os.getenv("DEBUG") == "True"
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'fintraq-svm5.onrender.com']
 
 # Application definition
 INSTALLED_APPS = [
@@ -95,8 +95,10 @@ USE_TZ = True
 
 # Static files configuration
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # Your source static files
-STATIC_ROOT = BASE_DIR / 'staticfiles'                 # Where collectstatic will put files
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]                 # Where collectstatic will put files
 
 # Media files
 MEDIA_URL = '/media/'
@@ -113,3 +115,7 @@ CRISPY_TEMPLATE_PACK = "bootstrap4"
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = 'accounts:login'
 LOGIN_URL = 'accounts:login'
+
+if DEBUG:
+    from django.conf.urls.static import static
+    urlpatterns += static(STATIC_URL, document_root=STATIC_ROOT)
