@@ -361,16 +361,6 @@ default_categories = [
     ('Other', 'other', '#6b7280'),
 ]
 
-User = get_user_model()
-for user in User.objects.all():
-    for name, cat_type, color in default_categories:
-        if not Category.objects.filter(user=user, name=name).exists():
-            Category.objects.create(
-                user=user,
-                name=name,
-                category_type=cat_type,
-                color=color
-            )
 
 from django.utils import timezone
 
